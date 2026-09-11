@@ -13,6 +13,7 @@
 		"shortcuts.ts",
 		"429-retry.ts",
 		"tool-box.ts",
+		"chat-padding.ts",
 		"status/",
 		"thinking-level-memory.ts",
 		"deepseek-v4-router.ts"
@@ -24,6 +25,7 @@
 			"./shortcuts.ts",
 			"./429-retry.ts",
 			"./tool-box.ts",
+			"./chat-padding.ts",
 			"./status/",
 			"./thinking-level-memory.ts",
 			"./deepseek-v4-router.ts"

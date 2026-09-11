@@ -141,6 +141,26 @@ Tweak the palette at the top of the file.
 
 ---
 
+### chat-padding
+
+Centers the conversation with a `PADDING_X`-column gutter on each side
+(default `2`).
+
+In fullscreen mode pi paints the transcript scrollbar *over* the rightmost
+column of the content, which hides the right border of full-width blocks
+(tool boxes, long output, ...). This extension finds the conversation
+document — the `child` of the primary `ScrollView` under `tui.layoutRoot` —
+and wraps its `render` so the content is laid out narrower and centered. The
+scrollbar then lands in the right-hand gutter instead of on top of the
+content.
+
+Set `PADDING_X` at the top of the file. (The dock — status line, editor,
+footer — is left full width; only the conversation is inset.)
+
+**File:** `chat-padding.ts`
+
+---
+
 ### thinking-level-memory
 
 Remembers the last thinking level per model and restores it automatically when you switch back via `/model`, the model selector, or model cycling. Models without a remembered level are raised to their highest supported level (any of the built-in levels: minimum, low, medium, high, xhigh, max) whenever the current level is below it — so switching from a model that only supports `high` to one that supports `max` lands on `max`, never on the inherited `high`. If the level is already at the new model's ceiling, it stays as-is. Manual changes always update the memory. Priority: remembered level → scoped `--models model:level` → max default.
