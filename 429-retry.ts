@@ -176,6 +176,9 @@ export default function (pi: ExtensionAPI) {
   // (null = use the incremental sequence)
   let customWaitMs: number | null = null;
   let _ctx: ExtensionContext | null = null;
+  // Handle for the 3s "hide initial status" timer, so it can be cleared on shutdown
+  // (a pending timer would otherwise touch a stale ctx and crash the process).
+  let initialStatusTimer: ReturnType<typeof setTimeout> | null = null;
 
   // Ghost re-issue suppression. After the user aborts (Esc/Ctrl+C), the SDK
   // (or pi's own session-level retry) may re-issue the SAME request with a
@@ -735,9 +738,14 @@ export default function (pi: ExtensionAPI) {
     );
 
     // Hide the initial status after 3 seconds (if not rate limited)
-    setTimeout(() => {
-      if (!isRateLimited) {
+    if (initialStatusTimer) clearTimeout(initialStatusTimer);
+    initialStatusTimer = setTimeout(() => {
+      initialStatusTimer = null;
+      if (isRateLimited) return;
+      try {
         ctx.ui.setStatus("429-retry", undefined);
+      } catch {
+        // Session ended / reloaded before the timer fired; ctx is stale.
       }
     }, 3000);
   });
@@ -753,6 +761,10 @@ export default function (pi: ExtensionAPI) {
 
   // Cleanup: restore the original fetch on session shutdown
   pi.on("session_shutdown", async () => {
+    if (initialStatusTimer) {
+      clearTimeout(initialStatusTimer);
+      initialStatusTimer = null;
+    }
     disableWrapper();
   });
 }
