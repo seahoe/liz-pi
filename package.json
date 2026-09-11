@@ -12,6 +12,7 @@
 		"request-logger.ts",
 		"shortcuts.ts",
 		"429-retry.ts",
+		"tool-box.ts",
 		"status/",
 		"thinking-level-memory.ts",
 		"deepseek-v4-router.ts"
@@ -22,6 +23,7 @@
 			"./request-logger.ts",
 			"./shortcuts.ts",
 			"./429-retry.ts",
+			"./tool-box.ts",
 			"./status/",
 			"./thinking-level-memory.ts",
 			"./deepseek-v4-router.ts"

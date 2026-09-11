@@ -116,6 +116,31 @@ Retries transient HTTP 429 responses automatically (any provider). The wait foll
 
 ---
 
+### tool-box
+
+Replaces pi's filled tool-call boxes (the red/green/blue background blocks)
+with **bordered boxes only**:
+
+| State | Border |
+|-------|--------|
+| running (pending) | Rei Ayanami hair blue `#a8c6df` |
+| success | the active theme's `success` green (unchanged) |
+| error | Asuka Langley red `#e4232a` |
+
+pi has no theme token for a tool-box border, so this extension patches the
+live pi-tui `Box` class at runtime. It walks the component tree handed to it
+by `ctx.ui.setWidget()` to find the real class inside the bundled runtime
+(importing `Box` from `@earendil-works/pi-tui` would patch a different copy),
+then swaps the background fill for a rounded border. Tool boxes are told
+apart from user/custom message boxes by the theme token in their `bgFn`
+closure source.
+
+Tweak the palette at the top of the file.
+
+**File:** `tool-box.ts`
+
+---
+
 ### thinking-level-memory
 
 Remembers the last thinking level per model and restores it automatically when you switch back via `/model`, the model selector, or model cycling. Models without a remembered level are raised to their highest supported level (any of the built-in levels: minimum, low, medium, high, xhigh, max) whenever the current level is below it — so switching from a model that only supports `high` to one that supports `max` lands on `max`, never on the inherited `high`. If the level is already at the new model's ceiling, it stays as-is. Manual changes always update the memory. Priority: remembered level → scoped `--models model:level` → max default.
