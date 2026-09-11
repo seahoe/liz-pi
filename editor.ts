@@ -4,16 +4,17 @@
  * Two features layered on the pi input editor:
  *
  * ── 1. Codex Composer restyle ──────────────────────────────────────────────
- * The default pi editor draws its chrome as top/bottom `─` border lines. Codex
- * instead draws the composer as a single filled panel: a solid background
- * rectangle with the text inset by one row (top/bottom) and two columns (left),
- * and a bold prompt sitting in the left gutter of the first text line. (Codex
- * uses `›`; this extension uses its heavy variant `❯`, which reads larger.)
+ * The default pi editor draws its chrome as top/bottom `─` border lines. This
+ * extension reframes the composer as a rounded border box (`╭─╮` / `│ │` /
+ * `╰─╯`) filled with the user-message background, with the text inset and a
+ * bold prompt sitting in the left gutter of the first text line. (Codex uses
+ * `›`; this extension uses its heavy variant `❯`, which reads larger.) The
+ * frame is painted with pi's editor border color, so the thinking-level / bash
+ * mode indicator is preserved.
  *
- * Codex fills the composer with the same background it uses for user messages
- * (`user_message_style()` in codex-rs/tui/src/style.rs). This extension does the
- * same via pi's `userMessageBg` theme token, so the panel is a subtle neutral
- * surface that adapts to dark themes (slightly lighter than the background) and
+ * The interior keeps Codex's user-message background (`user_message_style()`
+ * in codex-rs/tui/src/style.rs), applied via pi's `userMessageBg` theme token,
+ * so the panel adapts to dark themes (slightly lighter than the background) and
  * light themes (slightly darker) automatically, exactly like Codex.
  *
  * ── 2. `$skill` mention highlighting + completion (codex-style) ───────────
@@ -723,7 +724,11 @@ export class CodexComposer extends CustomEditor {
 		// moveCursor). No-op while a picker is open or the probe key is unchanged.
 		this.probeSkillAutocomplete();
 
-		const lines = super.render(width);
+		// Reserve two columns for the rounded side borders, then let the base
+		// editor lay its text out inside that. `inner` becomes the base editor's
+		// coordinate space, so `handleMouse` below shifts clicks accordingly.
+		const inner = Math.max(1, width - 2);
+		const lines = super.render(inner);
 		if (lines.length < 2) {
 			return lines;
 		}
@@ -745,35 +750,57 @@ export class CodexComposer extends CustomEditor {
 		// Drop the bold `❯` prompt into the left gutter of the first text row
 		// (the row just below the top border), replacing one padding space so the
 		// row width is unchanged. Codex renders the prompt as bold default-fg.
-		// When the input starts with `!` (bash mode), pi highlights the editor
-		// border with the `bashMode` theme color (green). Since we replaced the
-		// border with a filled panel, we highlight the `❯` prompt instead.
 		const isBashMode = this.getText().trimStart().startsWith("!");
 		const prompt = isBashMode
 			? this.piTheme.fg("bashMode", this.piTheme.bold(PROMPT_CHAR))
 			: this.piTheme.bold(PROMPT_CHAR);
 		lines[1] = `${prompt}${lines[1].slice(1)}`;
 
-		// Fill the whole panel — top border, text rows, and bottom border. Filling
-		// the top and bottom rows (not just the text) is what vertically centers
-		// the text inside the panel and keeps the cursor off the top edge, matching
-		// Codex's inset textarea.
-		for (let i = 0; i <= bottomBorder; i++) {
-			lines[i] = this.fillRow(lines[i], width, bg);
+		// Fill the interior text rows (not the border rows) with the panel
+		// background, so it still reads as a textarea framed by a rounded border.
+		for (let i = 1; i < bottomBorder; i++) {
+			lines[i] = this.fillRow(lines[i], inner, bg);
 		}
 
-		// Highlight `$skill` mentions last, after the panel fill: the fill already
+		// Highlight `$skill` mentions after the panel fill: the fill already
 		// re-asserts the background after every `\x1b[0m`, so the highlight only
 		// needs to re-assert its own foreground/bold after resets.
 		this.highlightSkills(lines, bottomBorder);
 
+		// Draw the rounded frame. `borderColor` is kept in sync by the app and
+		// tracks thinking level / bash mode, so the frame doubles as pi's editor
+		// border indicator.
+		const paint =
+			(this as unknown as { borderColor?: (text: string) => string }).borderColor ??
+			((text: string) => this.piTheme.fg("borderMuted", text));
+		const vertical = paint("│");
+		for (let i = 1; i < bottomBorder; i++) {
+			lines[i] = vertical + lines[i] + vertical;
+		}
+		lines[0] = paint(`╭${"─".repeat(inner)}╮`);
+		lines[bottomBorder] = paint(`╰${"─".repeat(inner)}╯`);
+
+		// Autocomplete rows keep their own styling; just make them full width.
+		for (let i = bottomBorder + 1; i < lines.length; i++) {
+			const pad = Math.max(0, width - visibleWidth(lines[i]));
+			lines[i] = lines[i] + " ".repeat(pad);
+		}
+
 		// Prepend a single open row so the panel does not sit flush against the
-		// widget above (e.g. the status header). Because the text is centered in
-		// the filled panel below, this one row reads as a subtle gap rather than a
-		// large empty band.
+		// widget above (e.g. the status header).
 		lines.unshift("");
 
 		return lines;
+	}
+
+	// The rounded frame and the prepended blank row shift the base editor's
+	// coordinate space; translate clicks so the caret lands where you clicked.
+	override handleMouse(event: Record<string, unknown> & { x: number; y: number; width?: number }): unknown {
+		if (event.y < 1) return undefined;
+		const inner = Math.max(1, (event.width ?? 0) - 2);
+		return (super.handleMouse as ((e: typeof event) => unknown) | undefined)?.(
+			Object.assign({}, event, { x: Math.max(0, event.x - 1), y: event.y - 1, width: inner }),
+		);
 	}
 }
 

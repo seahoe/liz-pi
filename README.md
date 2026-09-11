@@ -81,7 +81,7 @@ A comprehensive status bar suite with multiple modules:
 
 ![editor](https://github.com/user-attachments/assets/37fdd8a3-f924-4829-a4eb-ad9b2f42c187)
 
-- **Composer** — codex-style input area with a bold `❯` prompt (highlighted in `!bash` mode)
+- **Composer** — codex-style input area: a rounded border frame (`╭─╮`/`│ │`/`╰─╯`) filled with the user-message background, with a bold `❯` prompt (highlighted in `!bash` mode). The frame uses pi's editor border color, so the thinking-level indicator is preserved.
 - **Skill mentions** — `$skill` mentions render bold in the theme accent; typing `$` opens the mention picker with all indexed skills (agents, codex, claude, pi); unknown `$tokens` are left untouched
 
 **File:** `editor.ts`
@@ -154,8 +154,9 @@ and wraps its `render` so the content is laid out narrower and centered. The
 scrollbar then lands in the right-hand gutter instead of on top of the
 content.
 
-Set `PADDING_X` at the top of the file. (The dock — status line, editor,
-footer — is left full width; only the conversation is inset.)
+Set `PADDING_X` at the top of the file. Both the conversation and the dock
+(status line, editor, footer) are inset and centered; editor mouse clicks are
+translated back into the inset frame.
 
 **File:** `chat-padding.ts`
 
